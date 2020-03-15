@@ -5,7 +5,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 In the project directory, you can run:
 
 ### `yarn add`
-You should install 'node-sass', 'classnames', 'react-icons'.
+You should install 'node-sass', 'classnames', 'react-icons', 'react-router-dom'.
 
 ### `yarn start`
 
