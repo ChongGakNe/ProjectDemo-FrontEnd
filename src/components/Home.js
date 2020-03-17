@@ -3,6 +3,7 @@ import TodoTemplate from './TodoTemplate';
 import TodoInsert from './TodoInsert';
 import TodoList from './TodoList';
 import axios from 'axios';
+import produce from 'immer';
 
 const Home = () =>{
     // const [todos, setTodos] = useState(createBulkTodos);
@@ -19,6 +20,7 @@ const Home = () =>{
         setTodos(response.data);
         count = Object.keys(response.data).length + 1;          // 현재는 DB에 있는 갯수+1 을 저장하지만, 실제로는 DB에 저장된 데이터중 가장 큰 id값을 가져와야함
         console.log("count : ",count);
+        nextId.current = count;
     }
 
     useEffect(()=>{
@@ -64,7 +66,7 @@ const Home = () =>{
    
     const onRemove = useCallback(
        id=>{
-            setTodos(todos => todos.filter(todo => todo[id] === id));
+            setTodos(todos => todos.filter(todo => todo.id != id));
             // fetch 방식으로 서버에 delete 던지기
             // fetch(`api/event/${id}`,{
             //     method : 'DELETE',
@@ -92,10 +94,14 @@ const Home = () =>{
             setTodos( todos=>
                 todos.map(todo=>
                     todo.id === id ? { ...todo, checked: !todo.checked} : todo 
-                ),
+                )
             );
             console.log("id : ",id);
-            console.log("todo : ",todos);
+            console.log("toggle todo : ",todos);
+
+            const putTodo = todos.map(todo=>
+                todo.id === id ? { ...todo, checked: !todo.checked} : todo 
+            ).filter(todo=>todo.id===id)[0];
             //fetch 방식으로 서버에 post 던지기
             fetch('api/event',{
                 method : 'PUT',
@@ -103,7 +109,7 @@ const Home = () =>{
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(todos.filter(todo=>todo.id===id)[0])
+                body: JSON.stringify(putTodo)
             });
         },
         [todos]
