@@ -3,12 +3,14 @@ import TodoTemplate from './TodoTemplate';
 import TodoInsert from './TodoInsert';
 import TodoList from './TodoList';
 import axios from 'axios';
-import produce from 'immer';
 
 const Home = () =>{
-    // const [todos, setTodos] = useState(createBulkTodos);
     const [todos, setTodos] = useState([]);
+    const [fetchFlag, setFetchFlag] = useState(0);
+    const nextId = useRef(0);   // 고유값으로 사용될 id
+    const changeId = useRef(0);
     let count = 0;
+
     const fetchUrl = async ()=> {
         // fetch 방식으로 서버에 get 던지기
         // const response = await fetch('api/events',{method : 'GET'});
@@ -23,14 +25,6 @@ const Home = () =>{
         nextId.current = count;
     }
 
-    useEffect(()=>{
-        fetchUrl();
-    },[]);
-
-     // 고유값으로 사용될 id
-     // ref를 사용하여 변수 담기
-    const nextId = useRef(0);
-
     const onInsert = useCallback(
         context =>{
             const todo = {
@@ -39,8 +33,47 @@ const Home = () =>{
                 checked:false
             };
             setTodos(todos => todos.concat(todo));
+            setFetchFlag(1);
+            changeId.current = nextId.current;
             console.log("todos : ",todos);
             nextId.current += 1;
+            
+        },
+       [todos]
+    );
+   
+    const onRemove = useCallback(
+       id=>{
+            setTodos(todos => todos.filter(todo => todo.id != id));
+            setFetchFlag(2);
+            changeId.current = id;
+            
+        },
+        [todos]
+    );
+   
+    const onToggle = useCallback(
+        id=>{
+            setTodos( todos=>
+                todos.map(todo=>
+                    todo.id === id ? { ...todo, checked: !todo.checked} : todo 
+                )
+            );
+            setFetchFlag(3);
+            changeId.current = id;
+            console.log("id : ",id);
+            console.log("toggle todo : ",todos);
+        },
+        [todos]
+    );
+
+    useEffect(()=>{
+        fetchUrl();
+    },[]);
+
+    useEffect(()=>{
+        console.log("fetchFalg : ",fetchFlag);
+        if(fetchFlag === 1){
             //  fetch 방식으로 서버에 post 던지기
             //  fetch('api/event',{
             //     method : 'POST',
@@ -58,15 +91,9 @@ const Home = () =>{
                     'Content-Type': 'application/json'
                 }
             }
-            axios.post('api/event',todo,config);
+            axios.post('api/event',todos.filter(todo=>todo.id === changeId.current)[0],config);
             console.log("insert after nextId : ",nextId);
-        },
-       [todos]
-    );
-   
-    const onRemove = useCallback(
-       id=>{
-            setTodos(todos => todos.filter(todo => todo.id != id));
+        }else if(fetchFlag === 2){
             // fetch 방식으로 서버에 delete 던지기
             // fetch(`api/event/${id}`,{
             //     method : 'DELETE',
@@ -83,37 +110,32 @@ const Home = () =>{
                     'Content-Type': 'application/json'
                 }
             }
-            axios.delete(`api/event/${id}`,config);  
+            axios.delete(`api/event/${changeId.current}`,config);  
             console.log("delete after nextId : ",nextId);
-        },
-        [todos]
-    );
-   
-    const onToggle = useCallback(
-        id=>{
-            setTodos( todos=>
-                todos.map(todo=>
-                    todo.id === id ? { ...todo, checked: !todo.checked} : todo 
-                )
-            );
-            console.log("id : ",id);
-            console.log("toggle todo : ",todos);
+        }else if(fetchFlag === 3){
+            //fetch 방식으로 서버에 put 던지기
+            // fetch('api/event',{
+            //     method : 'PUT',
+            //     headers: {
+            //         'Accept': 'application/json',
+            //         'Content-Type': 'application/json'
+            //     },
+            //     body: JSON.stringify(todos.filter(todo=>todo.id === changeId.current)[0])
+            // });
 
-            const putTodo = todos.map(todo=>
-                todo.id === id ? { ...todo, checked: !todo.checked} : todo 
-            ).filter(todo=>todo.id===id)[0];
-            //fetch 방식으로 서버에 post 던지기
-            fetch('api/event',{
-                method : 'PUT',
+            // axios 방식으로 서버에 put 던지기
+            const config = {
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(putTodo)
-            });
-        },
-        [todos]
-    );
+                }
+            }
+            axios.put('api/event',todos.filter(todo=>todo.id === changeId.current)[0],config);
+            console.log("insert after nextId : ",nextId);
+        }else{
+
+        }
+    },[todos, fetchFlag]);
    
     return (
      <TodoTemplate>
